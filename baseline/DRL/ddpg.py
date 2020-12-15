@@ -25,15 +25,15 @@ Decoder.load_state_dict(torch.load('../renderer.pkl'))
 
 def decode(x, canvas): # b * (10 + 3)
     x = x.view(-1, 10 + 3)
-    stroke = 1 - Decoder(x[:, :10])
+    stroke = 1 - Decoder(x[:, :8])
     stroke = stroke.view(-1, 128, 128, 1)
     color_stroke = stroke * x[:, -3:].view(-1, 1, 1, 3)
     stroke = stroke.permute(0, 3, 1, 2)
     color_stroke = color_stroke.permute(0, 3, 1, 2)
-    stroke = stroke.view(-1, 5, 1, 128, 128)
-    color_stroke = color_stroke.view(-1, 5, 3, 128, 128)
-    for i in range(5):
-        canvas = canvas * (1 - stroke[:, i]) + color_stroke[:, i]
+    stroke = stroke.view(-1, 1, 1, 128, 128)
+    color_stroke = color_stroke.view(-1, 1, 3, 128, 128)
+    for i in range(1):
+        canvas = torch.max(canvas, stroke[:, i])
     return canvas
 
 def cal_trans(s, t):
@@ -48,8 +48,8 @@ class DDPG(object):
         self.env_batch = env_batch
         self.batch_size = batch_size        
 
-        self.actor = ResNet(9, 18, 65) # target, canvas, stepnum, coordconv 3 + 3 + 1 + 2
-        self.actor_target = ResNet(9, 18, 65)
+        self.actor = ResNet(9, 18, 13) # target, canvas, stepnum, coordconv 3 + 3 + 1 + 2
+        self.actor_target = ResNet(9, 18, 13)
         self.critic = ResNet_wobn(3 + 9, 18, 1) # add the last canvas for better prediction
         self.critic_target = ResNet_wobn(3 + 9, 18, 1) 
 
@@ -154,10 +154,12 @@ class DDPG(object):
         return -policy_loss, value_loss
 
     def observe(self, reward, state, done, step):
-        s0 = torch.tensor(self.state, device='cpu')
+        #s0 = torch.tensor(self.state, device='cpu')
+        s0 = self.state.clone().detach()
         a = to_tensor(self.action, "cpu")
         r = to_tensor(reward, "cpu")
-        s1 = torch.tensor(state, device='cpu')
+        #s1 = torch.tensor(state, device='cpu')
+        s1 = state.clone().detach()
         d = to_tensor(done.astype('float32'), "cpu")
         for i in range(self.env_batch):
             self.memory.append([s0[i], a[i], r[i], s1[i], d[i]])

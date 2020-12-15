@@ -7,11 +7,12 @@ from DRL.evaluator import Evaluator
 from utils.util import *
 from utils.tensorboard import TensorBoard
 import time
+import gc
 
 exp = os.path.abspath('.').split('/')[-1]
-writer = TensorBoard('../train_log/{}'.format(exp))
-os.system('ln -sf ../train_log/{} ./log'.format(exp))
-os.system('mkdir ./model')
+writer = TensorBoard('train_log/')
+#os.system('ln -sf train_log/log')
+#os.system('mkdir ./model')
 
 def train(agent, env, evaluate):
     train_times = args.train_times

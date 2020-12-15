@@ -8,7 +8,7 @@ from utils.tensorboard import TensorBoard
 from Renderer.model import FCN
 from Renderer.stroke_gen import *
 
-writer = TensorBoard("../train_log/")
+writer = TensorBoard("train_log/")
 import torch.optim as optim
 
 criterion = nn.MSELoss()
@@ -23,13 +23,13 @@ step = 0
 def save_model():
     if use_cuda:
         net.cpu()
-    torch.save(net.state_dict(), "../renderer.pkl")
+    torch.save(net.state_dict(), "renderer.pkl")
     if use_cuda:
         net.cuda()
 
 
 def load_weights():
-    pretrained_dict = torch.load("../renderer.pkl")
+    pretrained_dict = torch.load("renderer.pkl")
     model_dict = net.state_dict()
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
     model_dict.update(pretrained_dict)
@@ -37,12 +37,14 @@ def load_weights():
 
 
 load_weights()
-while step < 500000:
+#model_dict = net.state_dict()
+#net.load_state_dict(model_dict)
+while step < 5000:
     net.train()
     train_batch = []
     ground_truth = []
     for i in range(batch_size):
-        f = np.random.uniform(0, 1, 10)
+        f = np.random.uniform(0, 1, 8)
         train_batch.append(f)
         ground_truth.append(draw(f))
 
@@ -58,12 +60,14 @@ while step < 500000:
     loss.backward()
     optimizer.step()
     print(step, loss.item())
-    if step < 200000:
+    if step < 1000:
         lr = 1e-4
-    elif step < 400000:
+    elif step < 2000:
         lr = 1e-5
-    else:
+    elif step < 3000:
         lr = 1e-6
+    else:
+        lr = 1e-7
     for param_group in optimizer.param_groups:
         param_group["lr"] = lr
     writer.add_scalar("train/loss", loss.item(), step)

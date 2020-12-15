@@ -39,16 +39,16 @@ Decoder.load_state_dict(torch.load(args.renderer))
 
 def decode(x, canvas): # b * (10 + 3)
     x = x.view(-1, 10 + 3)
-    stroke = 1 - Decoder(x[:, :10])
+    stroke = 1 - Decoder(x[:, :8])
     stroke = stroke.view(-1, width, width, 1)
     color_stroke = stroke * x[:, -3:].view(-1, 1, 1, 3)
     stroke = stroke.permute(0, 3, 1, 2)
     color_stroke = color_stroke.permute(0, 3, 1, 2)
-    stroke = stroke.view(-1, 5, 1, width, width)
-    color_stroke = color_stroke.view(-1, 5, 3, width, width)
+    stroke = stroke.view(-1, 1, 1, width, width)
+    color_stroke = color_stroke.view(-1, 1, 3, width, width)
     res = []
-    for i in range(5):
-        canvas = canvas * (1 - stroke[:, i]) + color_stroke[:, i]
+    for i in range(1):
+        canvas = torch.max(canvas, stroke[:, i])
         res.append(canvas)
     return canvas, res
 
@@ -99,7 +99,7 @@ def save_img(res, imgid, divide=False):
     output = cv2.resize(output, origin_shape)
     cv2.imwrite('output/generated' + str(imgid) + '.png', output)
 
-actor = ResNet(9, 18, 65) # action_bundle = 5, 65 = 5 * 13
+actor = ResNet(9, 18, 13) # action_bundle = 5, 65 = 5 * 13
 actor.load_state_dict(torch.load(args.actor))
 actor = actor.to(device).eval()
 Decoder = Decoder.to(device).eval()
@@ -126,7 +126,7 @@ with torch.no_grad():
         actions = actor(torch.cat([canvas, img, stepnum, coord], 1))
         canvas, res = decode(actions, canvas)
         print('canvas step {}, L2Loss = {}'.format(i, ((canvas - img) ** 2).mean()))
-        for j in range(5):
+        for j in range(1):
             save_img(res[j], args.imgid)
             args.imgid += 1
     if args.divide != 1:
@@ -143,6 +143,6 @@ with torch.no_grad():
             actions = actor(torch.cat([canvas, patch_img, stepnum, coord], 1))
             canvas, res = decode(actions, canvas)
             print('divided canvas step {}, L2Loss = {}'.format(i, ((canvas - patch_img) ** 2).mean()))
-            for j in range(5):
+            for j in range(1):
                 save_img(res[j], args.imgid, True)
                 args.imgid += 1

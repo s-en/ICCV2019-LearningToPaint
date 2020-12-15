@@ -35,20 +35,17 @@ class Paint:
     def load_data(self):
         # CelebA
         global train_num, test_num
-        for i in range(200000):
-            img_id = '%06d' % (i + 1)
-            try:
-                img = cv2.imread('./data/img_align_celeba/' + img_id + '.jpg', cv2.IMREAD_UNCHANGED)
-                img = cv2.resize(img, (width, width))
-                if i > 2000:                
-                    train_num += 1
-                    img_train.append(img)
-                else:
-                    test_num += 1
-                    img_test.append(img)
-            finally:
-                if (i + 1) % 10000 == 0:                    
-                    print('loaded {} images'.format(i + 1))
+        imgs = np.load('./data/kanji.npz')['arr_0']
+        for i in range(60000):
+            img = cv2.resize(imgs[i,:,:], (width, width), interpolation=cv2.INTER_LINEAR)
+            img = np.stack((img,)*3, axis=-1)
+            if i > 1000:
+                train_num += 1
+                img_train.append(img)
+            else:
+                test_num += 1
+                img_test.append(img)
+        del imgs
         print('finish loading data, {} training images, {} testing images'.format(str(train_num), str(test_num)))
         
     def pre_data(self, id, test):
