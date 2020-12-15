@@ -33,7 +33,6 @@ class Paint:
         self.test = False
         
     def load_data(self):
-        # CelebA
         global train_num, test_num
         imgs = np.load('./data/kanji.npz')['arr_0']
         for i in range(60000):
@@ -73,6 +72,7 @@ class Paint:
         self.stepnum = 0
         self.canvas = torch.zeros([self.batch_size, 3, width, width], dtype=torch.uint8).to(device)
         self.lastdis = self.ini_dis = self.cal_dis()
+        self.prev_action = None
         return self.observation()
     
     def observation(self):
@@ -87,8 +87,21 @@ class Paint:
         return (s.transpose(0, 3) * t).transpose(0, 3)
     
     def step(self, action):
+        if torch.is_tensor(self.prev_action):
+            # strokeの間を繋ぐ
+            new_action = [
+                self.prev_action[:,4:6],
+                self.prev_action[:,4:6],
+                action[:,:2],
+                self.prev_action[:,7:8],
+                action[:,6:7],
+                action[:,8:13]
+            ]
+            connect_action = torch.cat(new_action, dim=1)
+            self.canvas = (decode(connect_action, self.canvas.float() / 255) * 255).byte()
         self.canvas = (decode(action, self.canvas.float() / 255) * 255).byte()
         self.stepnum += 1
+        self.prev_action = action
         ob = self.observation()
         done = (self.stepnum == self.max_step)
         reward = self.cal_reward() # np.array([0.] * self.batch_size)
@@ -99,6 +112,6 @@ class Paint:
     
     def cal_reward(self):
         dis = self.cal_dis()
-        reward = (self.lastdis - dis) / (self.ini_dis + 1e-8)
+        reward = (self.lastdis - dis) / (self.ini_dis + 1e-8) - self.stepnum / 32
         self.lastdis = dis
         return to_numpy(reward)
