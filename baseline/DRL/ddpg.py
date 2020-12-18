@@ -24,14 +24,14 @@ Decoder = FCN()
 Decoder.load_state_dict(torch.load('../renderer.pkl'))
 
 def decode(x, canvas): # b * (10 + 3)
-    x = x.view(-1, 10 + 3)
-    stroke = 1 - Decoder(x[:, :8])
+    x = x.view(-1, 21)
+    stroke = 1 - Decoder(x[:, :21])
     stroke = stroke.view(-1, 128, 128, 1)
-    color_stroke = stroke * x[:, -3:].view(-1, 1, 1, 3)
+    #color_stroke = stroke * x[:, -3:].view(-1, 1, 1, 3)
     stroke = stroke.permute(0, 3, 1, 2)
-    color_stroke = color_stroke.permute(0, 3, 1, 2)
+    #color_stroke = color_stroke.permute(0, 3, 1, 2)
     stroke = stroke.view(-1, 1, 1, 128, 128)
-    color_stroke = color_stroke.view(-1, 1, 3, 128, 128)
+    #color_stroke = color_stroke.view(-1, 1, 3, 128, 128)
     for i in range(1):
         canvas = torch.max(canvas, stroke[:, i])
     return canvas
@@ -48,8 +48,8 @@ class DDPG(object):
         self.env_batch = env_batch
         self.batch_size = batch_size        
 
-        self.actor = ResNet(9, 18, 13) # target, canvas, stepnum, coordconv 3 + 3 + 1 + 2
-        self.actor_target = ResNet(9, 18, 13)
+        self.actor = ResNet(9, 18, 21) # target, canvas, stepnum, coordconv 3 + 3 + 1 + 2
+        self.actor_target = ResNet(9, 18, 21)
         self.critic = ResNet_wobn(3 + 9, 18, 1) # add the last canvas for better prediction
         self.critic_target = ResNet_wobn(3 + 9, 18, 1) 
 

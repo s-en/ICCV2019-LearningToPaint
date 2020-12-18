@@ -38,14 +38,14 @@ Decoder = FCN()
 Decoder.load_state_dict(torch.load(args.renderer))
 
 def decode(x, canvas): # b * (10 + 3)
-    x = x.view(-1, 10 + 3)
-    stroke = 1 - Decoder(x[:, :8])
+    x = x.view(-1, 21)
+    stroke = 1 - Decoder(x[:, :21])
     stroke = stroke.view(-1, width, width, 1)
-    color_stroke = stroke * x[:, -3:].view(-1, 1, 1, 3)
+    #color_stroke = stroke * x[:, -3:].view(-1, 1, 1, 3)
     stroke = stroke.permute(0, 3, 1, 2)
-    color_stroke = color_stroke.permute(0, 3, 1, 2)
+    #color_stroke = color_stroke.permute(0, 3, 1, 2)
     stroke = stroke.view(-1, 1, 1, width, width)
-    color_stroke = color_stroke.view(-1, 1, 3, width, width)
+    #color_stroke = color_stroke.view(-1, 1, 3, width, width)
     res = []
     for i in range(1):
         canvas = torch.max(canvas, stroke[:, i])
@@ -99,7 +99,7 @@ def save_img(res, imgid, divide=False):
     output = cv2.resize(output, origin_shape)
     cv2.imwrite('output/generated' + str(imgid) + '.png', output)
 
-actor = ResNet(9, 18, 13) # action_bundle = 5, 65 = 5 * 13
+actor = ResNet(9, 18, 21) # action_bundle = 5, 65 = 5 * 13
 actor.load_state_dict(torch.load(args.actor))
 actor = actor.to(device).eval()
 Decoder = Decoder.to(device).eval()

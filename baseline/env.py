@@ -28,7 +28,7 @@ class Paint:
     def __init__(self, batch_size, max_step):
         self.batch_size = batch_size
         self.max_step = max_step
-        self.action_space = (13)
+        self.action_space = (21)
         self.observation_space = (self.batch_size, width, width, 7)
         self.test = False
         
@@ -87,18 +87,18 @@ class Paint:
         return (s.transpose(0, 3) * t).transpose(0, 3)
     
     def step(self, action):
-        if torch.is_tensor(self.prev_action):
+        #if torch.is_tensor(self.prev_action):
             # strokeの間を繋ぐ
-            new_action = [
-                self.prev_action[:,4:6],
-                self.prev_action[:,4:6],
-                action[:,:2],
-                self.prev_action[:,7:8],
-                action[:,6:7],
-                action[:,8:13]
-            ]
-            connect_action = torch.cat(new_action, dim=1)
-            self.canvas = (decode(connect_action, self.canvas.float() / 255) * 255).byte()
+            #new_action = [
+            #    self.prev_action[:,4:6],
+            #    self.prev_action[:,4:6],
+            #    action[:,:2],
+            #    self.prev_action[:,7:8],
+            #    action[:,6:7],
+            #    action[:,8:13]
+            #]
+            #connect_action = torch.cat(new_action, dim=1)
+            #self.canvas = (decode(connect_action, self.canvas.float() / 255) * 255).byte()
         self.canvas = (decode(action, self.canvas.float() / 255) * 255).byte()
         self.stepnum += 1
         self.prev_action = action

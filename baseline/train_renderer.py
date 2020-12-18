@@ -39,12 +39,12 @@ def load_weights():
 load_weights()
 #model_dict = net.state_dict()
 #net.load_state_dict(model_dict)
-while step < 5000:
+while step < 100000:
     net.train()
     train_batch = []
     ground_truth = []
     for i in range(batch_size):
-        f = np.random.uniform(0, 1, 8)
+        f = np.random.uniform(0, 1, 21)
         train_batch.append(f)
         ground_truth.append(draw(f))
 
@@ -60,14 +60,14 @@ while step < 5000:
     loss.backward()
     optimizer.step()
     print(step, loss.item())
-    if step < 1000:
-        lr = 1e-4
-    elif step < 2000:
-        lr = 1e-5
-    elif step < 3000:
+    if step < 50000:
         lr = 1e-6
-    else:
+    elif step < 80000:
         lr = 1e-7
+    elif step < 90000:
+        lr = 5e-7
+    else:
+        lr = 1e-8
     for param_group in optimizer.param_groups:
         param_group["lr"] = lr
     writer.add_scalar("train/loss", loss.item(), step)

@@ -1,28 +1,32 @@
 import cv2
 import numpy as np
+from scipy import interpolate
 
 def normal(x, width):
     return (int)(x * (width - 1) + 0.5)
 
+def spline3(x,y,point=360,deg=3):
+    tck,u = interpolate.splprep([x,y],k=deg,s=0) 
+    u = np.linspace(0,1,num=point,endpoint=True) 
+    spline = interpolate.splev(u,tck)
+    return spline[0],spline[1]
+
 def draw(f, width=128):
-    x0, y0, x1, y1, x2, y2, z0, z2 = f
-    x1 = x0 + (x2 - x0) * x1
-    y1 = y0 + (y2 - y0) * y1
-    x0 = normal(x0, width * 2)
-    x1 = normal(x1, width * 2)
-    x2 = normal(x2, width * 2)
-    y0 = normal(y0, width * 2)
-    y1 = normal(y1, width * 2)
-    y2 = normal(y2, width * 2)
-    z0 = (int)(1 + z0 * width // 3)
-    z2 = (int)(1 + z2 * width // 3)
+    # 2*7 + 7 = 21
+    # x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, z0, z1, z2, z3, z4, z5, z6 = f
+    pnum = 360
+    xn = f[0:14:2]
+    yn = f[1:14:2]
+    zn = f[14:21]
+    margin = int(pnum / (len(zn)-1))
+    x, y = spline3(xn, yn, pnum)
+    z = [0]*pnum
+    for m in range(len(zn)-1):
+        z[m*margin:(m+1)*margin] = np.linspace(zn[m],zn[m+1],num=margin,endpoint=True)
     canvas = np.zeros([width * 2, width * 2]).astype('float32')
-    tmp = 1. / 32
-    for i in range(32):
-        t = i * tmp
-        x = (int)((1-t) * (1-t) * x0 + 2 * t * (1-t) * x1 + t * t * x2)
-        y = (int)((1-t) * (1-t) * y0 + 2 * t * (1-t) * y1 + t * t * y2)
-        z = (int)((1-t) * z0 + t * z2)
-        # w = (1-t) * w0 + t * w2
-        cv2.circle(canvas, (y, x), z, 1, -1)
+    for i in range(pnum):
+        fx = normal(x[i], width * 2)
+        fy = normal(y[i], width * 2)
+        fz = (int)(1 + z[i] * width // 3)
+        cv2.circle(canvas, (fy, fx), fz, 1, -1)
     return 1 - cv2.resize(canvas, dsize=(width, width))
